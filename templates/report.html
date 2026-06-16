@@ -1,0 +1,899 @@
+{% extends "base.html" %}
+
+{% block title %}{{ report.idea_title }} - AI Startup Validation Report{% endblock %}
+
+{% block content %}
+<div class="report-header-section">
+    <div class="report-header-info">
+        <a href="/" class="btn btn-secondary" style="margin-bottom: 1rem;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <h1>{{ report.idea_title }}</h1>
+        <p>AI Validation Analysis generated on {{ report.created_at }}</p>
+    </div>
+    <div>
+        <a href="{{ url_for('dashboard.download_pdf', report_id=report.id) }}" class="btn btn-primary" style="padding: 0.8rem 1.5rem;">
+            <i class="fa-solid fa-file-pdf"></i> Download PDF Report
+        </a>
+    </div>
+</div>
+
+<!-- Executive Metric Dashboard (Requirement 1) -->
+<div class="score-summary-card">
+    <div class="score-dial-container">
+        <svg class="score-circle-svg" viewBox="0 0 120 120">
+            <circle class="score-circle-bg" cx="60" cy="60" r="50"></circle>
+            <circle class="score-circle-fill" cx="60" cy="60" r="50" 
+                    stroke-dasharray="314" 
+                    stroke-dashoffset="{{ 314 - (report.overall_score * 31.4) }}"></circle>
+        </svg>
+        <div class="score-value">
+            {{ "%.1f"|format(report.overall_score) }}<span>/10</span>
+        </div>
+    </div>
+    
+    <div class="score-text-details">
+        <div class="score-verdict {% if report.overall_score >= 7.5 %}success{% elif report.overall_score >= 5.0 %}medium{% else %}low{% endif %}">
+            Verdict: 
+            {% if report.overall_score >= 7.5 %}
+                Strong Viability
+            {% elif report.overall_score >= 5.5 %}
+                Moderate Viability
+            {% else %}
+                High Risk / Pivot Recommended
+            {% endif %}
+        </div>
+        
+        <!-- Quick Stats Grid -->
+        <div class="exec-metric-grid">
+            <div class="exec-metric-card">
+                <div class="exec-metric-label">Overall Score</div>
+                <div class="exec-metric-value score">{{ "%.1f"|format(report.overall_score) }}/10</div>
+            </div>
+            <div class="exec-metric-card">
+                <div class="exec-metric-label">Investment Readiness</div>
+                <div class="exec-metric-value readiness">
+                    {{ "%.1f"|format(report.scores_obj.scores.investment_readiness or 5.0) }}/10
+                </div>
+            </div>
+            <div class="exec-metric-card">
+                <div class="exec-metric-label">Risk Profile</div>
+                <div class="exec-metric-value {% if report.overall_score >= 7.5 %}risk-low{% elif report.overall_score >= 5.5 %}risk-medium{% else %}risk-high{% endif %}">
+                    {% if report.overall_score >= 7.5 %}
+                        Low Risk
+                    {% elif report.overall_score >= 5.5 %}
+                        Moderate
+                    {% else %}
+                        High Risk
+                    {% endif %}
+                </div>
+            </div>
+            <div class="exec-metric-card">
+                <div class="exec-metric-label">Recommendation</div>
+                <div class="exec-metric-value" style="font-size: 0.95rem; font-weight: 700; color: var(--primary);">
+                    {% if report.overall_score >= 7.5 %}
+                        Strongly Recommended
+                    {% elif report.overall_score >= 6.5 %}
+                        Recommended
+                    {% elif report.overall_score >= 5.0 %}
+                        Needs Improvement
+                    {% else %}
+                        High Risk / Pivot
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Insights and AI Recommendation Box (Requirement 8 & 9) -->
+<div class="quick-insights-container">
+    <!-- Top 5 Insights -->
+    <div class="insights-card">
+        <h4 style="color: #fff; margin-bottom: 0.75rem;"><i class="fa-solid fa-square-poll-vertical"></i> Top 5 Strategic Insights</h4>
+        <ul class="insights-list">
+            {% if report.swot_obj.strengths and report.swot_obj.strengths|length > 0 %}
+                <li class="insight-pos"><i class="fa-solid fa-circle-check"></i> {{ report.swot_obj.strengths[0] }}</li>
+            {% endif %}
+            {% if report.swot_obj.strengths and report.swot_obj.strengths|length > 1 %}
+                <li class="insight-pos"><i class="fa-solid fa-circle-check"></i> {{ report.swot_obj.strengths[1] }}</li>
+            {% endif %}
+            {% if report.swot_obj.opportunities and report.swot_obj.opportunities|length > 0 %}
+                <li class="insight-pos"><i class="fa-solid fa-circle-check"></i> {{ report.swot_obj.opportunities[0] }}</li>
+            {% endif %}
+            {% if report.swot_obj.weaknesses and report.swot_obj.weaknesses|length > 0 %}
+                <li class="insight-neg"><i class="fa-solid fa-triangle-exclamation"></i> {{ report.swot_obj.weaknesses[0] }}</li>
+            {% endif %}
+            {% if report.swot_obj.threats and report.swot_obj.threats|length > 0 %}
+                <li class="insight-neut"><i class="fa-solid fa-circle-exclamation"></i> {{ report.swot_obj.threats[0] }}</li>
+            {% endif %}
+        </ul>
+    </div>
+    
+    <!-- AI Recommendation Callout -->
+    <div class="ai-recommendation-card">
+        <div class="ai-rec-title">
+            <i class="fa-solid fa-star"></i> AI Recommendation Spotlight
+        </div>
+        <div class="ai-rec-text">
+            <strong>Why it can succeed:</strong> 
+            {{ report.scores_obj.score_justification|truncate(120) or "Strong market demand with hyper-personalization opportunities." }}
+            <br/><br/>
+            <strong>Biggest Risk:</strong> 
+            {% if report.final_report_obj.key_risks and report.final_report_obj.key_risks|length > 0 %}
+                {{ report.final_report_obj.key_risks[0].risk|truncate(90) }}
+            {% else %}
+                Intense market competition and tech scalability.
+            {% endif %}
+            <br/><br/>
+            <strong>Next Step:</strong> 
+            {% if report.final_report_obj.recommendations and report.final_report_obj.recommendations|length > 0 %}
+                {{ report.final_report_obj.recommendations[0].step or report.final_report_obj.recommendations[0] }}
+            {% else %}
+                Develop a Minimum Viable Product (MVP) focusing on core feature values.
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Mind Map Visualization Widget (Requirement 2) -->
+<div class="mindmap-section">
+    <div class="mindmap-title">
+        <i class="fa-solid fa-network-wired"></i> Startup Intelligence Mind Map
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Click on any branch to navigate and inspect detailed analyses.</p>
+    <div class="mindmap-container">
+        <div class="mindmap-center-node" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+            {{ report.idea_title }}
+        </div>
+        <div class="mindmap-branches">
+            <div class="mindmap-node" onclick="scrollToSection('market-sec')">
+                <i class="fa-solid fa-globe" style="color: var(--primary);"></i> Market Opportunity
+            </div>
+            <div class="mindmap-node" onclick="scrollToSection('competitors-sec')">
+                <i class="fa-solid fa-users-viewfinder" style="color: var(--secondary);"></i> Competitors
+            </div>
+            <div class="mindmap-node" onclick="scrollToSection('personas-sec')">
+                <i class="fa-solid fa-users" style="color: #34d399;"></i> Target Customers
+            </div>
+            <div class="mindmap-node" onclick="scrollToSection('revenue-sec')">
+                <i class="fa-solid fa-coins" style="color: #fbbf24;"></i> Revenue Model
+            </div>
+            <div class="mindmap-node" onclick="scrollToSection('swot-sec')">
+                <i class="fa-solid fa-table-cells-large" style="color: #60a5fa;"></i> SWOT Analysis
+            </div>
+            <div class="mindmap-node" onclick="scrollToSection('risks-sec')">
+                <i class="fa-solid fa-shield-halved" style="color: #f87171;"></i> Key Risks
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Startup Validation journey Timeline (Requirement 11) -->
+<div class="timeline-journey-container">
+    <h4 style="color: #fff; margin-bottom: 1rem;"><i class="fa-solid fa-route"></i> Startup Progress Timeline Roadmap</h4>
+    <div class="journey-track">
+        <div class="journey-step completed">
+            <div class="journey-bubble"><i class="fa-solid fa-lightbulb"></i></div>
+            <div class="journey-label">Idea Pitch</div>
+        </div>
+        <div class="journey-step active">
+            <div class="journey-bubble"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div class="journey-label">AI Validation</div>
+        </div>
+        <div class="journey-step">
+            <div class="journey-bubble">3</div>
+            <div class="journey-label">MVP Launch</div>
+        </div>
+        <div class="journey-step">
+            <div class="journey-bubble">4</div>
+            <div class="journey-label">Early Adopters</div>
+        </div>
+        <div class="journey-step">
+            <div class="journey-bubble">5</div>
+            <div class="journey-label">Monetization</div>
+        </div>
+        <div class="journey-step">
+            <div class="journey-bubble">6</div>
+            <div class="journey-label">Scale Up</div>
+        </div>
+    </div>
+</div>
+
+<!-- Investor View Spotlight (Requirement 12) -->
+<div class="investor-card">
+    <div class="investor-title">
+        <i class="fa-solid fa-gem"></i> Investor Spotlight Snapshot
+    </div>
+    <div class="investor-grid">
+        <div class="investor-metric">
+            <div class="investor-metric-val">{{ report.market_research_obj.market_size.SOM or "High" }}</div>
+            <div class="investor-metric-label">Obtainable Market (SOM)</div>
+        </div>
+        <div class="investor-metric">
+            <div class="investor-metric-val">{{ "%.1f"|format(report.scores_obj.scores.scalability or 7.0) }}/10</div>
+            <div class="investor-metric-label">Scalability Index</div>
+        </div>
+        <div class="investor-metric">
+            <div class="investor-metric-val">
+                {% if report.overall_score >= 7.5 %}
+                    Low Risk
+                {% elif report.overall_score >= 5.5 %}
+                    Moderate
+                {% else %}
+                    High Risk
+                {% endif %}
+            </div>
+            <div class="investor-metric-label">Risk Rating</div>
+        </div>
+        <div class="investor-metric">
+            <div class="investor-metric-val">
+                {% if report.overall_score >= 7.5 %}
+                    Seed Ready
+                {% elif report.overall_score >= 5.5 %}
+                    Pre-Seed
+                {% else %}
+                    Incubator
+                {% endif %}
+            </div>
+            <div class="investor-metric-label">Funding Status</div>
+        </div>
+    </div>
+</div>
+
+<!-- Feasibility Breakdown Dashboard (Requirement 3) -->
+<div class="report-section" id="feasibility-sec">
+    <h3 class="section-title"><i class="fa-solid fa-chart-bar"></i> Feasibility breakdown</h3>
+    <div class="feasibility-dashboard">
+        <!-- Radar Chart Container -->
+        <div class="radar-chart-container">
+            <canvas id="feasibilityRadar"></canvas>
+        </div>
+        
+        <!-- Score Progress Bars -->
+        <div class="feasibility-bars">
+            {% set category_names = {
+                'market_demand': 'Market Demand',
+                'competition': 'Competition Moat',
+                'revenue_potential': 'Revenue Potential',
+                'technical_complexity': 'Technical Feasibility',
+                'scalability': 'Scalability Factor',
+                'innovation': 'Innovation Rate',
+                'investment_readiness': 'VC / Angel Readiness'
+            } %}
+            {% for key, val in report.scores_obj.scores.items() %}
+                <div class="feasibility-bar-item">
+                    <div class="feasibility-bar-label-row">
+                        <span class="feasibility-bar-name">{{ category_names[key] or key|replace('_', ' ')|title }}</span>
+                        <span class="feasibility-bar-score">{{ val }}/10</span>
+                    </div>
+                    <div class="feasibility-bar-track">
+                        <div class="feasibility-bar-fill" style="width: {{ val * 10 }}%;"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Market Analysis -->
+<div class="report-section" id="market-sec">
+    <h3 class="section-title"><i class="fa-solid fa-globe"></i> Market Research</h3>
+    <div class="section-content">
+        <p><strong>Primary Domain:</strong> <span style="color: var(--primary); font-weight: 600;">{{ report.market_research_obj.domain }}</span></p>
+        
+        <div class="market-size-container">
+            <div class="market-size-card">
+                <div class="market-size-label">TAM (Total Addressable Market)</div>
+                <div class="market-size-val">{{ report.market_research_obj.market_size.TAM }}</div>
+            </div>
+            <div class="market-size-card">
+                <div class="market-size-label">SAM (Serviceable Addressable Market)</div>
+                <div class="market-size-val">{{ report.market_research_obj.market_size.SAM }}</div>
+            </div>
+            <div class="market-size-card">
+                <div class="market-size-label">SOM (Serviceable Obtainable Market)</div>
+                <div class="market-size-val">{{ report.market_research_obj.market_size.SOM }}</div>
+            </div>
+        </div>
+        
+        <!-- Expandable Details Analysis (Requirement 10) -->
+        <div class="accordion-wrapper">
+            <details class="accordion-details">
+                <summary class="accordion-summary">View Detailed Market Research Data</summary>
+                <div class="accordion-content">
+                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Demand Justification:</h4>
+                    <p>{{ report.market_research_obj.demand_analysis }}</p>
+                    
+                    <h4 style="color: #fff; margin-top: 1rem; margin-bottom: 0.5rem;">Size Explanation:</h4>
+                    <p>{{ report.market_research_obj.market_size.explanation }}</p>
+                    
+                    <h4 style="color: #fff; margin-top: 1rem; margin-bottom: 0.5rem;">Key Industry Trends:</h4>
+                    <ul style="padding-left: 1.25rem;">
+                        {% for trend in report.market_research_obj.trends %}
+                            <li>{{ trend }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h4 style="color: #fff; margin-top: 1rem; margin-bottom: 0.5rem;">Growth Opportunities:</h4>
+                    <ul style="padding-left: 1.25rem;">
+                        {% for opp in report.market_research_obj.growth_opportunities %}
+                            <li>{{ opp }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+
+<!-- Competitor Analysis Overhaul (Requirement 5) -->
+<div class="report-section" id="competitors-sec">
+    <h3 class="section-title"><i class="fa-solid fa-users-viewfinder"></i> Competitor Analysis</h3>
+    <div class="section-content">
+        <div class="competitor-comparison-box">
+            <!-- Comparison Table -->
+            <div class="competitor-table-wrapper">
+                <table class="competitor-table">
+                    <thead>
+                        <tr>
+                            <th>Competitor</th>
+                            <th>Key Features</th>
+                            <th>Strengths</th>
+                            <th>Weaknesses</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for comp in report.competitor_obj.competitors %}
+                            <tr>
+                                <td><strong>{{ comp.name }}</strong></td>
+                                <td>
+                                    {% if comp.features is defined and comp.features %}
+                                        {% if comp.features is string %}{{ comp.features }}{% else %}{{ comp.features|join(', ') }}{% endif %}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td style="color: #34d399;">
+                                    {% if comp.strengths is string %}
+                                        {{ comp.strengths }}
+                                    {% else %}
+                                        {{ comp.strengths|join(', ') }}
+                                    {% endif %}
+                                </td>
+                                <td style="color: #f87171;">
+                                    {% if comp.weaknesses is string %}
+                                        {{ comp.weaknesses }}
+                                    {% else %}
+                                        {{ comp.weaknesses|join(', ') }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Competitor Positioning Plot -->
+            <div class="pos-chart-container">
+                <div class="pos-chart-title">Market Positioning Map</div>
+                <div style="width: 100%; height: 260px; position: relative;">
+                    <canvas id="competitorPositioningChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Accordion details -->
+        <div class="accordion-wrapper" style="margin-top: 1.5rem;">
+            <details class="accordion-details">
+                <summary class="accordion-summary">View Competitive Strategy Analysis</summary>
+                <div class="accordion-content">
+                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Differentiation Strategy:</h4>
+                    <p>{{ report.competitor_obj.differentiation_strategy }}</p>
+                    
+                    <h4 style="color: #fff; margin-top: 1rem; margin-bottom: 0.5rem;">Market Gaps Discovered:</h4>
+                    <ul style="padding-left: 1.25rem;">
+                        {% for gap in report.competitor_obj.market_gaps %}
+                            <li>{{ gap }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Persona Visual Cards (Requirement 6) -->
+<div class="report-section" id="personas-sec">
+    <h3 class="section-title"><i class="fa-solid fa-users"></i> Buyer Personas</h3>
+    <div class="section-content">
+        <p style="margin-bottom: 1.25rem;"><strong>Target Audience Overview:</strong> {{ report.persona_obj.target_audience }}</p>
+        
+        <div class="personas-grid">
+            {% set persona_list = [report.persona_obj.persona] if report.persona_obj.persona is mapping else report.persona_obj.get('personas', []) %}
+            {% for pers in persona_list %}
+                <div class="persona-visual-card">
+                    <div class="persona-header">
+                        <div class="persona-avatar">
+                            <i class="fa-regular fa-user"></i>
+                        </div>
+                        <div>
+                            <div class="persona-name">{{ pers.name }}</div>
+                            <div class="persona-role">{{ pers.role_or_occupation }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="persona-details-grid">
+                        <div style="font-size: 0.85rem; color: var(--text-main);">
+                            <strong>Demographics:</strong> {% if pers.demographics is string %}{{ pers.demographics }}{% else %}{{ pers.demographics|join(', ') }}{% endif %}
+                        </div>
+                        
+                        <!-- Buying Potential representation -->
+                        <div class="persona-buying-potential">
+                            <strong>Buying Potential:</strong>
+                            {% if loop.index == 1 %}
+                                <i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i><i class="fa-regular fa-circle" style="font-size:0.6rem; opacity:0.3;"></i>
+                            {% elif loop.index == 2 %}
+                                <i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i><i class="fa-regular fa-circle" style="font-size:0.6rem; opacity:0.3;"></i><i class="fa-regular fa-circle" style="font-size:0.6rem; opacity:0.3;"></i>
+                            {% else %}
+                                <i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i><i class="fa-solid fa-coins"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <div style="margin-top: 0.5rem;">
+                            <strong>Key Goals:</strong>
+                            <ul class="persona-bullets">
+                                {% if pers.goals is string %}
+                                    <li><i class="fa-solid fa-circle-play" style="color: var(--primary);"></i> {{ pers.goals }}</li>
+                                {% else %}
+                                    {% for goal in pers.goals %}
+                                        <li><i class="fa-solid fa-circle-play" style="color: var(--primary);"></i> {{ goal }}</li>
+                                    {% endfor %}
+                                {% endif %}
+                            </ul>
+                        </div>
+                        
+                        <div style="margin-top: 0.5rem;">
+                            <strong>Pain Points:</strong>
+                            <ul class="persona-bullets">
+                                {% if pers.pain_points is string %}
+                                    <li><i class="fa-solid fa-circle-exclamation" style="color: #f87171;"></i> {{ pers.pain_points }}</li>
+                                {% else %}
+                                    {% for pain in pers.pain_points %}
+                                        <li><i class="fa-solid fa-circle-exclamation" style="color: #f87171;"></i> {{ pain }}</li>
+                                    {% endfor %}
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Accordion details -->
+        <div class="accordion-wrapper" style="margin-top: 1.5rem;">
+            <details class="accordion-details">
+                <summary class="accordion-summary">View Detailed Target Customer Segmentations</summary>
+                <div class="accordion-content">
+                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Core User Segments:</h4>
+                    <ul style="padding-left: 1.25rem; margin-bottom: 1rem;">
+                        {% for segment in report.persona_obj.user_segments %}
+                            <li>{{ segment }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Key Audience Pain Points:</h4>
+                    <ul style="padding-left: 1.25rem; margin-bottom: 1rem;">
+                        {% for pain in report.persona_obj.key_pain_points %}
+                            <li>{{ pain }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Customer Acquisition Strategy:</h4>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        {% for channel in report.persona_obj.acquisition_channels %}
+                            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 8px;">
+                                {% if channel is mapping %}
+                                    <strong style="color: var(--primary);">{{ channel.channel }}</strong>: {{ channel.strategy }}
+                                {% else %}
+                                    {{ channel }}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue & Financials Overhaul (Requirement 7) -->
+<div class="report-section" id="revenue-sec">
+    <h3 class="section-title"><i class="fa-solid fa-coins"></i> Financial & Revenue Strategy</h3>
+    <div class="section-content">
+        <!-- Money flow diagram -->
+        <h4 style="color: #fff; margin-bottom: 1rem; text-align: center;">Value & Capital Money Flowchart</h4>
+        <div class="revenue-flow-container">
+            <div class="flow-node">
+                <div class="flow-node-title">Target Users</div>
+                <div class="flow-node-desc">Subscribe to platform</div>
+            </div>
+            <div class="flow-arrow">
+                <i class="fa-solid fa-right-long"></i>
+            </div>
+            <div class="flow-node highlight">
+                <div class="flow-node-title">{{ report.idea_title }}</div>
+                <div class="flow-node-desc">AI Insights & Service</div>
+            </div>
+            <div class="flow-arrow">
+                <i class="fa-solid fa-right-long"></i>
+            </div>
+            <div class="flow-node">
+                <div class="flow-node-title">Revenue Streams</div>
+                <div class="flow-node-desc">SaaS Tiers & Upgrades</div>
+            </div>
+        </div>
+        
+        <h4 style="margin: 1.5rem 0 0.75rem; color: #fff;">Recommended Pricing Tiers:</h4>
+        <div class="pricing-grid">
+            {% for tier in report.revenue_obj.pricing_tiers %}
+                <div class="pricing-card {% if loop.index == 2 or tier.tier_name|lower == 'pro' or tier.tier_name|lower == 'growth' %}featured{% endif %}">
+                    <div class="pricing-tier-name">{{ tier.tier_name }}</div>
+                    <div class="pricing-price">{{ tier.price_point }}</div>
+                    <div class="pricing-cycle">{{ tier.billing_cycle }}</div>
+                    
+                    <ul class="pricing-features-list">
+                        {% if tier.key_features is string %}
+                            <li><i class="fa-solid fa-circle-check"></i> {{ tier.key_features }}</li>
+                        {% else %}
+                            {% for feature in tier.key_features %}
+                                <li><i class="fa-solid fa-circle-check"></i> {{ feature }}</li>
+                            {% endfor %}
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Accordion details -->
+        <div class="accordion-wrapper">
+            <details class="accordion-details">
+                <summary class="accordion-summary">View Detailed Financial Strategy Canvas</summary>
+                <div class="accordion-content">
+                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Monetization Strategies:</h4>
+                    <ul style="padding-left: 1.25rem; margin-bottom: 1rem;">
+                        {% for strategy in report.revenue_obj.monetization_strategies %}
+                            <li><strong>{{ strategy.strategy }}</strong>: {{ strategy.description }}</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Revenue Projections:</h4>
+                    <p>{{ report.revenue_obj.revenue_projection or report.revenue_obj.revenue_potential_projection }}</p>
+                    
+                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Sustainability & Unit Economics:</h4>
+                    <p>{{ report.revenue_obj.sustainability_analysis }}</p>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+
+<!-- SWOT Matrix 2x2 Grid (Requirement 4) -->
+<div class="report-section" id="swot-sec">
+    <h3 class="section-title"><i class="fa-solid fa-table-cells-large"></i> SWOT Matrix</h3>
+    <div class="swot-grid-matrix">
+        <div class="swot-matrix-card s">
+            <div class="swot-matrix-badge">S</div>
+            <div class="swot-matrix-header">
+                <span class="swot-matrix-title"><i class="fa-solid fa-circle-arrow-up"></i> Strengths</span>
+            </div>
+            <ul class="swot-matrix-list">
+                {% for item in report.swot_obj.strengths %}
+                    <li><i class="fa-solid fa-circle"></i> <span>{{ item }}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="swot-matrix-card w">
+            <div class="swot-matrix-badge">W</div>
+            <div class="swot-matrix-header">
+                <span class="swot-matrix-title"><i class="fa-solid fa-circle-arrow-down"></i> Weaknesses</span>
+            </div>
+            <ul class="swot-matrix-list">
+                {% for item in report.swot_obj.weaknesses %}
+                    <li><i class="fa-solid fa-circle"></i> <span>{{ item }}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="swot-matrix-card o">
+            <div class="swot-matrix-badge">O</div>
+            <div class="swot-matrix-header">
+                <span class="swot-matrix-title"><i class="fa-solid fa-chart-line"></i> Opportunities</span>
+            </div>
+            <ul class="swot-matrix-list">
+                {% for item in report.swot_obj.opportunities %}
+                    <li><i class="fa-solid fa-circle"></i> <span>{{ item }}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="swot-matrix-card t">
+            <div class="swot-matrix-badge">T</div>
+            <div class="swot-matrix-header">
+                <span class="swot-matrix-title"><i class="fa-solid fa-triangle-exclamation"></i> Threats</span>
+            </div>
+            <ul class="swot-matrix-list">
+                {% for item in report.swot_obj.threats %}
+                    <li><i class="fa-solid fa-circle"></i> <span>{{ item }}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Risk Roadmap -->
+<div class="report-section" id="risks-sec">
+    <h3 class="section-title"><i class="fa-solid fa-shield-halved"></i> Risk Mitigation Roadmap</h3>
+    <div class="risks-container">
+        {% for risk in report.final_report_obj.key_risks %}
+            <div class="risk-item">
+                <div class="risk-icon-box">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <div class="risk-content-box">
+                    <h4>{{ risk.risk }}</h4>
+                    <div class="risk-mitigation">
+                        <i class="fa-solid fa-arrow-turn-up fa-rotate-90"></i>
+                        <span><strong>Mitigation Strategy:</strong> {{ risk.mitigation }}</span>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Actionable Next Steps -->
+<div class="report-section">
+    <h3 class="section-title"><i class="fa-solid fa-list-check"></i> Actionable Next Steps</h3>
+    <div class="timeline">
+        {% for step in report.final_report_obj.recommendations %}
+            <div class="timeline-item">
+                <div class="timeline-content">
+                    {% if step is mapping %}
+                        <strong>{{ step.step }}</strong>: {{ step.details }}
+                    {% else %}
+                        {{ step }}
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Strategic Conclusion -->
+<div class="report-section" style="margin-bottom: 2rem;">
+    <h3 class="section-title"><i class="fa-solid fa-flag-checkered"></i> Strategic Conclusion</h3>
+    <div class="section-content">
+        <p>{{ report.final_report_obj.conclusion }}</p>
+    </div>
+</div>
+
+<!-- AI Startup Mentor CTA -->
+<div class="mentor-cta-card" style="margin-bottom: 1.5rem;">
+    <div class="mentor-cta-left">
+        <div class="mentor-cta-icon">
+            <i class="fa-solid fa-robot"></i>
+        </div>
+        <div>
+            <h3 class="mentor-cta-title">Talk to Your AI Startup Mentor</h3>
+            <p class="mentor-cta-desc">Ask any follow-up question about your startup. The mentor has read every line of this report and will give answers specific to <strong>{{ report.idea_title }}</strong> — not generic advice.</p>
+        </div>
+    </div>
+    <a href="{{ url_for('mentor.mentor_page', report_id=report.id) }}" class="btn-mentor-launch">
+        <i class="fa-solid fa-comments"></i> Open Mentor Chat
+    </a>
+</div>
+
+<!-- Startup Roadmap CTA -->
+<div class="mentor-cta-card" style="margin-bottom: 4rem; background: linear-gradient(135deg, rgba(13,20,38,0.85), rgba(99,102,241,0.12)); border-color: rgba(99,102,241,0.35);">
+    <div class="mentor-cta-left">
+        <div class="mentor-cta-icon" style="background: linear-gradient(135deg, var(--secondary), #818cf8);">
+            <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+        <div>
+            <h3 class="mentor-cta-title">Generate Your Startup Execution Roadmap</h3>
+            <p class="mentor-cta-desc">Get a personalized 6-month action plan with 7 execution phases, monthly goals, milestone checkpoints, and risk warnings — all tailored to <strong>{{ report.idea_title }}</strong>.</p>
+        </div>
+    </div>
+    <a href="{{ url_for('roadmap.roadmap_page', report_id=report.id) }}" class="btn-mentor-launch" style="background: var(--secondary);">
+        <i class="fa-solid fa-route"></i> View Roadmap
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Smooth scrolling mind map branch trigger
+    function scrollToSection(id) {
+        const target = document.getElementById(id);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Add focus/glow animation
+            target.style.transition = 'box-shadow 0.5s ease-in-out';
+            target.style.boxShadow = '0 0 20px rgba(13, 148, 136, 0.4)';
+            setTimeout(() => {
+                target.style.boxShadow = 'none';
+            }, 1800);
+        }
+    }
+
+    // Feasibility Radar Chart setup
+    document.addEventListener('DOMContentLoaded', function() {
+        const radarCtx = document.getElementById('feasibilityRadar').getContext('2d');
+        new Chart(radarCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Market Demand', 'Competition Moat', 'Revenue Potential', 'Technical Feasibility', 'Scalability Factor', 'Innovation Rate', 'VC Readiness'],
+                datasets: [{
+                    label: 'Viability Assessment',
+                    data: [
+                        {{ report.scores_obj.scores.market_demand or 0.0 }},
+                        {{ report.scores_obj.scores.competition or 0.0 }},
+                        {{ report.scores_obj.scores.revenue_potential or 0.0 }},
+                        {{ report.scores_obj.scores.technical_complexity or 0.0 }},
+                        {{ report.scores_obj.scores.scalability or 0.0 }},
+                        {{ report.scores_obj.scores.innovation or 0.0 }},
+                        {{ report.scores_obj.scores.investment_readiness or 0.0 }}
+                    ],
+                    backgroundColor: 'rgba(13, 148, 136, 0.18)',
+                    borderColor: '#0d9488',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#818cf8',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#0d9488',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.08)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.08)'
+                        },
+                        pointLabels: {
+                            color: '#94a3b8',
+                            font: {
+                                family: 'Outfit',
+                                size: 10,
+                                weight: '500'
+                            }
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: 'rgba(255,255,255,0.4)',
+                            font: {
+                                size: 8
+                            },
+                            beginAtZero: true,
+                            max: 10,
+                            stepSize: 2
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Competitor Positioning Scatter Plot setup
+        const posCtx = document.getElementById('competitorPositioningChart').getContext('2d');
+        
+        // Competitors array conversion
+        const competitorDataset = [
+            {% for comp in report.competitor_obj.competitors %}
+            {
+                label: '{{ comp.name }}',
+                data: [{ 
+                    x: {{ loop.index * 2 + 1 }}, 
+                    y: {{ loop.index + 2 }}
+                }],
+                backgroundColor: '#818cf8',
+                pointRadius: 6,
+                pointHoverRadius: 8
+            },
+            {% endfor %}
+            {
+                label: '{{ report.idea_title }} (You)',
+                data: [{ x: 8, y: 9 }],
+                backgroundColor: '#0d9488',
+                pointRadius: 10,
+                pointHoverRadius: 12,
+                borderColor: '#fff',
+                borderWidth: 2
+            }
+        ];
+
+        new Chart(posCtx, {
+            type: 'scatter',
+            data: {
+                datasets: competitorDataset
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        min: 0,
+                        max: 10,
+                        title: {
+                            display: true,
+                            text: 'Market Presence',
+                            color: '#94a3b8',
+                            font: {
+                                family: 'Outfit',
+                                size: 10
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.04)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: {
+                                size: 8
+                            }
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        max: 10,
+                        title: {
+                            display: true,
+                            text: 'Feature Richness / AI Differentiation',
+                            color: '#94a3b8',
+                            font: {
+                                family: 'Outfit',
+                                size: 10
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.04)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: {
+                                size: 8
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#94a3b8',
+                            font: {
+                                family: 'Outfit',
+                                size: 9
+                            },
+                            boxWidth: 10
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

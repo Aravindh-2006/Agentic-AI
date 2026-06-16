@@ -1,0 +1,714 @@
+{% extends "base.html" %}
+
+{% block title %}AI Startup Mentor — {{ report.idea_title }}{% endblock %}
+
+{% block head %}
+<style>
+/* ── Mentor Page Layout ─────────────────────────────────────── */
+.mentor-page {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+    padding-bottom: 3rem;
+}
+@media(min-width: 1024px) {
+    .mentor-page {
+        grid-template-columns: 320px 1fr;
+        align-items: start;
+    }
+}
+
+/* ── Sidebar ────────────────────────────────────────────────── */
+.mentor-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.mentor-header-card {
+    background: linear-gradient(135deg, rgba(13,20,38,0.9), rgba(99,102,241,0.18));
+    border: 1.5px solid rgba(99,102,241,0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.mentor-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: #fff;
+    margin: 0 auto 1rem;
+    box-shadow: 0 0 20px rgba(13,148,136,0.4);
+}
+
+.mentor-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.3rem;
+}
+
+.mentor-tagline {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
+
+.mentor-idea-badge {
+    background: rgba(13,148,136,0.12);
+    border: 1px solid rgba(13,148,136,0.25);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.82rem;
+    color: var(--primary);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+/* ── Dashboard Card ─────────────────────────────────────────── */
+.mentor-dashboard-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.25rem;
+    backdrop-filter: blur(12px);
+}
+
+.mentor-dashboard-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mentor-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.85rem;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    border: 1px solid transparent;
+    font-size: 0.85rem;
+}
+
+.mentor-stat:last-child { margin-bottom: 0; }
+
+.mentor-stat.strength {
+    background: rgba(16,185,129,0.06);
+    border-color: rgba(16,185,129,0.15);
+}
+.mentor-stat.weakness {
+    background: rgba(239,68,68,0.06);
+    border-color: rgba(239,68,68,0.15);
+}
+.mentor-stat.opportunity {
+    background: rgba(99,102,241,0.06);
+    border-color: rgba(99,102,241,0.2);
+}
+.mentor-stat.risk {
+    background: rgba(245,158,11,0.06);
+    border-color: rgba(245,158,11,0.15);
+}
+
+.mentor-stat-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.mentor-stat.strength  .mentor-stat-label { color: #34d399; }
+.mentor-stat.weakness  .mentor-stat-label { color: #f87171; }
+.mentor-stat.opportunity .mentor-stat-label { color: #818cf8; }
+.mentor-stat.risk      .mentor-stat-label { color: #fbbf24; }
+
+.mentor-stat-text {
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* ── Quick Questions ────────────────────────────────────────── */
+.quick-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.25rem;
+}
+
+.quick-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.quick-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+.quick-btn:last-child { margin-bottom: 0; }
+.quick-btn:hover {
+    background: rgba(13,148,136,0.1);
+    border-color: rgba(13,148,136,0.3);
+    color: #fff;
+}
+
+/* ── Chat Panel ─────────────────────────────────────────────── */
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    min-height: 520px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+}
+
+.chat-panel-header {
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.02);
+    flex-shrink: 0;
+}
+
+.chat-panel-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chat-panel-title i { color: var(--primary); }
+
+.chat-clear-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.chat-clear-btn:hover {
+    background: rgba(239,68,68,0.08);
+    border-color: rgba(239,68,68,0.3);
+    color: #f87171;
+}
+
+/* ── Messages Area ──────────────────────────────────────────── */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    scroll-behavior: smooth;
+}
+
+/* welcome state */
+.chat-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 0.75rem;
+    opacity: 0.55;
+    text-align: center;
+    padding: 2rem;
+}
+
+.chat-welcome i {
+    font-size: 2.5rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.chat-welcome p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* bubbles */
+.msg-row {
+    display: flex;
+    gap: 0.75rem;
+    animation: fadeIn 0.25s ease-out;
+}
+
+.msg-row.user {
+    flex-direction: row-reverse;
+}
+
+.msg-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.msg-row.user .msg-avatar {
+    background: var(--secondary);
+    color: #fff;
+}
+
+.msg-row.assistant .msg-avatar {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+}
+
+.msg-bubble {
+    max-width: 80%;
+    border-radius: 16px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.msg-row.user .msg-bubble {
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.25);
+    color: var(--text-main);
+    border-top-right-radius: 4px;
+}
+
+.msg-row.assistant .msg-bubble {
+    background: rgba(13,148,136,0.08);
+    border: 1px solid rgba(13,148,136,0.2);
+    color: var(--text-main);
+    border-top-left-radius: 4px;
+}
+
+/* structured response inside bubble */
+.structured-block {
+    margin-top: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.struct-section {
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.struct-section.rec {
+    background: rgba(13,148,136,0.1);
+    border: 1px solid rgba(13,148,136,0.2);
+}
+
+.struct-section.reason {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+}
+
+.struct-section.steps {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.15);
+}
+
+.struct-section.priority {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 0.78rem;
+    width: fit-content;
+}
+
+.struct-section.priority.high {
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.25);
+    color: #f87171;
+}
+
+.struct-section.priority.medium {
+    background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: #fbbf24;
+}
+
+.struct-section.priority.low {
+    background: rgba(16,185,129,0.12);
+    border: 1px solid rgba(16,185,129,0.25);
+    color: #34d399;
+}
+
+.struct-label {
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+}
+
+.steps-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+}
+
+.steps-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    color: var(--text-muted);
+}
+
+.step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(99,102,241,0.2);
+    color: #818cf8;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* typing indicator */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.7rem 1rem;
+    background: rgba(13,148,136,0.08);
+    border: 1px solid rgba(13,148,136,0.2);
+    border-radius: 16px;
+    border-top-left-radius: 4px;
+    width: fit-content;
+}
+
+.typing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--primary);
+    animation: typingBounce 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ── Input Area ─────────────────────────────────────────────── */
+.chat-input-area {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.015);
+    flex-shrink: 0;
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.chat-textarea {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    resize: none;
+    min-height: 46px;
+    max-height: 120px;
+    line-height: 1.5;
+    transition: var(--transition-smooth);
+    overflow-y: auto;
+}
+.chat-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-glow);
+    background: rgba(255,255,255,0.07);
+}
+.chat-textarea::placeholder { color: var(--text-muted); }
+.chat-textarea:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.chat-send-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: var(--primary);
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-smooth);
+    flex-shrink: 0;
+}
+.chat-send-btn:hover:not(:disabled) {
+    background: var(--primary-hover);
+    box-shadow: 0 0 12px var(--primary-glow);
+}
+.chat-send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.chat-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="report-header-section" style="margin-bottom: 1.5rem;">
+    <div class="report-header-info">
+        <a href="{{ url_for('dashboard.view_report', report_id=report.id) }}" class="btn btn-secondary" style="margin-bottom: 1rem;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Report
+        </a>
+        <h1 style="font-size:1.75rem;">
+            <i class="fa-solid fa-robot" style="color: var(--primary); margin-right: 0.5rem;"></i>
+            AI Startup Mentor
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+            Personalized advice for <strong style="color:#fff;">{{ report.idea_title }}</strong> — powered by your full validation report.
+        </p>
+    </div>
+</div>
+
+<!-- Main Mentor Layout -->
+<div class="mentor-page" data-report-id="{{ report.id }}">
+
+    <!-- ── Left Sidebar ── -->
+    <div class="mentor-sidebar">
+
+        <!-- Identity card -->
+        <div class="mentor-header-card">
+            <div class="mentor-avatar">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="mentor-name">AI Startup Mentor</div>
+            <div class="mentor-tagline">I've read every section of your validation report. Ask me anything about your startup.</div>
+            <div class="mentor-idea-badge">
+                <i class="fa-solid fa-lightbulb"></i> {{ report.idea_title }}
+            </div>
+        </div>
+
+        <!-- Mentor Dashboard -->
+        <div class="mentor-dashboard-card">
+            <div class="mentor-dashboard-title">
+                <i class="fa-solid fa-chart-simple" style="color: var(--primary);"></i>
+                Mentor Dashboard
+            </div>
+
+            <div class="mentor-stat strength">
+                <div class="mentor-stat-label"><i class="fa-solid fa-circle-arrow-up"></i> Top Strength</div>
+                <div class="mentor-stat-text">
+                    {{ mentor_dashboard.top_strength or 'Unique value proposition in a growing market.' }}
+                </div>
+            </div>
+
+            <div class="mentor-stat weakness">
+                <div class="mentor-stat-label"><i class="fa-solid fa-circle-arrow-down"></i> Top Weakness</div>
+                <div class="mentor-stat-text">
+                    {{ mentor_dashboard.top_weakness or 'Early-stage with limited market validation.' }}
+                </div>
+            </div>
+
+            <div class="mentor-stat opportunity">
+                <div class="mentor-stat-label"><i class="fa-solid fa-chart-line"></i> Biggest Opportunity</div>
+                <div class="mentor-stat-text">
+                    {{ mentor_dashboard.biggest_opportunity or 'Underserved market segment with high growth potential.' }}
+                </div>
+            </div>
+
+            <div class="mentor-stat risk">
+                <div class="mentor-stat-label"><i class="fa-solid fa-triangle-exclamation"></i> Critical Risk</div>
+                <div class="mentor-stat-text">
+                    {{ mentor_dashboard.critical_risk or 'Competitive pressure from established players.' }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Questions -->
+        <div class="quick-card">
+            <div class="quick-card-title">
+                <i class="fa-solid fa-bolt"></i> Quick Questions
+            </div>
+            <button class="quick-btn" data-q="How can I improve my startup idea?">How can I improve my startup?</button>
+            <button class="quick-btn" data-q="What are the biggest risks in my business and how do I address them?">What are my biggest risks?</button>
+            <button class="quick-btn" data-q="How can I get my first 100 customers?">How to get first 100 customers?</button>
+            <button class="quick-btn" data-q="What pricing strategy should I use based on my revenue model?">What pricing strategy to use?</button>
+            <button class="quick-btn" data-q="What features should I build first for my MVP?">What features to build first?</button>
+            <button class="quick-btn" data-q="What marketing channels should I focus on to grow?">Best marketing channels?</button>
+            <button class="quick-btn" data-q="Is my startup suitable for funding and how do I attract investors?">Am I ready for funding?</button>
+            <button class="quick-btn" data-q="How can I differentiate from my competitors?">How to beat competitors?</button>
+        </div>
+
+    </div><!-- /sidebar -->
+
+    <!-- ── Chat Panel ── -->
+    <div class="chat-panel" id="chatPanel">
+
+        <div class="chat-panel-header">
+            <div class="chat-panel-title">
+                <i class="fa-solid fa-comments"></i>
+                Mentor Chat
+            </div>
+            <button class="chat-clear-btn" id="clearChatBtn">
+                <i class="fa-solid fa-trash-can"></i> Clear
+            </button>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+
+            {% if history %}
+                <!-- Render persisted history -->
+                {% for msg in history %}
+                    {% if msg.role == 'user' %}
+                        <div class="msg-row user">
+                            <div class="msg-avatar"><i class="fa-regular fa-user"></i></div>
+                            <div class="msg-bubble">{{ msg.content }}</div>
+                        </div>
+                    {% else %}
+                        <div class="msg-row assistant">
+                            <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
+                            <div class="msg-bubble">
+                                {% set sr = msg.structured_response %}
+                                {% if sr and sr is mapping %}
+                                    {{ sr.recommendation }}
+                                    <div class="structured-block">
+                                        <div class="struct-section reason">
+                                            <div class="struct-label">Reasoning</div>
+                                            {{ sr.reasoning }}
+                                        </div>
+                                        {% if sr.action_steps %}
+                                        <div class="struct-section steps">
+                                            <div class="struct-label">Action Steps</div>
+                                            <ul class="steps-list">
+                                                {% for step in sr.action_steps %}
+                                                <li>
+                                                    <span class="step-num">{{ loop.index }}</span>
+                                                    <span>{{ step }}</span>
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                        <div class="struct-section priority {{ sr.priority_level|lower }}">
+                                            <i class="fa-solid fa-flag"></i>
+                                            {{ sr.priority_level }} Priority
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    {{ msg.content }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- Welcome state -->
+                <div class="chat-welcome" id="welcomeMsg">
+                    <i class="fa-solid fa-robot"></i>
+                    <p>
+                        <strong style="color:#fff;">Your AI Startup Mentor is ready.</strong><br>
+                        I've analyzed every section of the <strong>{{ report.idea_title }}</strong> validation report.
+                        Ask me anything — from funding strategy to your first 100 customers.
+                    </p>
+                </div>
+            {% endif %}
+
+        </div><!-- /chat-messages -->
+
+        <!-- Input -->
+        <div class="chat-input-area">
+            <div class="chat-input-row">
+                <textarea
+                    id="chatInput"
+                    class="chat-textarea"
+                    placeholder="Ask anything about your startup…"
+                    rows="1"
+                ></textarea>
+                <button id="sendBtn" class="chat-send-btn" title="Send">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="chat-hint">
+                Press <kbd style="background:rgba(255,255,255,0.08); padding:1px 5px; border-radius:4px; font-size:0.75rem;">Enter</kbd> to send &nbsp;·&nbsp;
+                <kbd style="background:rgba(255,255,255,0.08); padding:1px 5px; border-radius:4px; font-size:0.75rem;">Shift+Enter</kbd> for new line
+            </div>
+        </div>
+
+    </div><!-- /chat-panel -->
+
+</div><!-- /mentor-page -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/mentor.js') }}"></script>
+{% endblock %}

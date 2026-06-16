@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Register - AI Startup Validator{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h2 class="form-title">Create Account</h2>
+    <p class="form-subtitle">Get started with validation of your ideas</p>
+    
+    <form action="{{ url_for('auth.register') }}" method="POST">
+        <div class="form-group">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" id="username" name="username" class="form-input" placeholder="entrepreneur101" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" id="email" name="email" class="form-input" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required autocomplete="new-password">
+        </div>
+        
+        <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-user-plus"></i> Create Account
+        </button>
+    </form>
+    
+    <p class="form-footer-link">
+        Already have an account? <a href="{{ url_for('auth.login') }}">Log in here</a>
+    </p>
+</div>
+{% endblock %}
