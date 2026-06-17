@@ -35,36 +35,49 @@ def run_agent_validation_pipeline(app, report_id, title, description):
             report_agent = ReportGenerationAgent()
             
             # Step 1: Market Research
+            print(f"[Pipeline] Starting Market Research for report {report_id}")
             Report.update_status(report_id, 'market_research')
             market_data = mr_agent.analyze(title, description)
             Report.update_agent_output(report_id, 'market_research', json.dumps(market_data))
+            print(f"[Pipeline] Market Research done")
 
             # Step 2: Competitor Analysis
+            print(f"[Pipeline] Starting Competitor Analysis for report {report_id}")
             Report.update_status(report_id, 'competitor_analysis')
             competitor_data = comp_agent.analyze(title, description, market_data)
             Report.update_agent_output(report_id, 'competitor_analysis', json.dumps(competitor_data))
+            print(f"[Pipeline] Competitor Analysis done")
 
             # Step 3: Customer Persona
+            print(f"[Pipeline] Starting Customer Persona for report {report_id}")
             Report.update_status(report_id, 'customer_persona')
             persona_data = cust_agent.analyze(title, description, market_data, competitor_data)
             Report.update_agent_output(report_id, 'customer_persona', json.dumps(persona_data))
+            print(f"[Pipeline] Customer Persona done")
 
             # Step 4: Revenue Model
+            print(f"[Pipeline] Starting Revenue Model for report {report_id}")
             Report.update_status(report_id, 'revenue_model')
             revenue_data = rev_agent.analyze(title, description, market_data, persona_data)
             Report.update_agent_output(report_id, 'revenue_model', json.dumps(revenue_data))
+            print(f"[Pipeline] Revenue Model done")
 
             # Step 5: SWOT Analysis
+            print(f"[Pipeline] Starting SWOT Analysis for report {report_id}")
             Report.update_status(report_id, 'swot_analysis')
             swot_data = swot_agent.analyze(title, description, market_data, competitor_data, persona_data, revenue_data)
             Report.update_agent_output(report_id, 'swot_analysis', json.dumps(swot_data))
+            print(f"[Pipeline] SWOT Analysis done")
 
             # Step 6: Feasibility Scoring
+            print(f"[Pipeline] Starting Feasibility Scoring for report {report_id}")
             Report.update_status(report_id, 'scoring')
             scoring_data = score_agent.analyze(title, description, market_data, competitor_data, persona_data, revenue_data, swot_data)
             overall_score = float(scoring_data.get("overall_score", 0.0))
+            print(f"[Pipeline] Feasibility Scoring done — score: {overall_score}")
 
             # Step 7: Final Synthesis Report
+            print(f"[Pipeline] Starting Report Generation for report {report_id}")
             Report.update_status(report_id, 'report_generation')
             final_report_data = report_agent.analyze(
                 idea_title=title, 
@@ -104,6 +117,10 @@ def run_agent_validation_pipeline(app, report_id, title, description):
             print(f"Error executing validation pipeline for report {report_id}: {e}")
             import traceback
             traceback.print_exc()
+            # Log full details for debugging on Render
+            print(f"PIPELINE FAILED — report_id={report_id}, title={title}")
+            print(f"GEMINI_API_KEY set: {bool(os.getenv('GEMINI_API_KEY'))}")
+            print(f"GEMINI_MODEL: {os.getenv('GEMINI_MODEL', 'NOT SET')}")
             Report.update_status(report_id, 'failed', error_message=str(e))
 
 
