@@ -3,22 +3,30 @@ from flask import Flask
 from flask_login import LoginManager
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables (.env used locally; Render uses dashboard env vars)
 load_dotenv(override=True)
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
-    # Trust X-Forwarded-Proto from Render's proxy so OAuth redirect uses https://
+    # Production session security
+    is_production = os.getenv("FLASK_ENV", "development") == "production"
+    app.config["SESSION_COOKIE_SECURE"] = is_production      # HTTPS-only cookies in prod
+    app.config["SESSION_COOKIE_HTTPONLY"] = True              # no JS access to session cookie
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"            # CSRF protection
+
+    # Trust X-Forwarded-Proto from Render's reverse proxy
+    # This ensures request.url_root returns https:// not http://
+    # Required for Google OAuth redirect_uri to be correct
     from werkzeug.middleware.proxy_fix import ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-    # Initialize database
+    # Initialize SQLite database (creates tables if not exist)
     from database.db import init_db
     init_db()
 
-    # Flask-Login configuration
+    # Flask-Login setup
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
@@ -29,7 +37,7 @@ def create_app():
         from models.user import User
         return User.get(int(user_id))
 
-    # Register blueprints
+    # Register all blueprints
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
     from routes.mentor import mentor_bp
@@ -40,7 +48,6 @@ def create_app():
     app.register_blueprint(mentor_bp, url_prefix='/dashboard')
     app.register_blueprint(roadmap_bp, url_prefix='/dashboard')
 
-    # Redirect root to dashboard
     @app.route('/')
     def root():
         from flask import redirect, url_for
@@ -49,7 +56,7 @@ def create_app():
     return app
 
 
-# Single module-level app instance for gunicorn
+# Module-level instance for gunicorn (app:app)
 app = create_app()
 
 if __name__ == '__main__':
