@@ -1,10 +1,10 @@
 # Gunicorn configuration for Render deployment
-# Agents take ~20-30s, SSE streams are long-lived — needs generous timeouts
+# Using 1 worker with long timeout — free tier has 512MB RAM
+# 2 workers would exceed memory limit and cause silent thread kills
 
-workers = 2                  # 2 workers so SSE + agent pipeline don't share one worker
-worker_class = "sync"        # sync is fine for Flask
-timeout = 300                # 5 minutes — enough for all 7 agents to complete
+workers = 1                  # 1 worker only — free tier RAM constraint
+threads = 4                  # use threads instead of workers for concurrency
+worker_class = "gthread"     # gthread supports both SSE and background threads
+timeout = 300                # 5 minutes for all 7 agents to complete
 keepalive = 5
-max_requests = 100           # restart workers after 100 requests to prevent memory leaks
-max_requests_jitter = 20
-preload_app = False          # don't preload — avoids SQLite issues across forked workers
+preload_app = False
