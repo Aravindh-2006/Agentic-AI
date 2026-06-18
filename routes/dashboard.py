@@ -155,7 +155,7 @@ def validate():
             target=run_agent_validation_pipeline,
             args=(app, report_id, title, description)
         )
-        thread.daemon = True
+        thread.daemon = False  # non-daemon: thread survives even if gunicorn worker is busy
         thread.start()
         
         # Return dashboard page focusing on the progress of the validation run
@@ -173,23 +173,29 @@ def stream_validation(report_id):
     """
     def event_stream():
         last_status = None
+        idle_count = 0
         while True:
             report = Report.get(report_id)
             if not report:
                 yield f"data: {json.dumps({'status': 'error', 'message': 'Report not found'})}\n\n"
                 break
-                
+
             status = report.get('status')
-            
-            # Send initial and updated states
+
             if status != last_status:
                 last_status = status
+                idle_count = 0
                 yield f"data: {json.dumps(report)}\n\n"
-                
+
             if status in ('completed', 'failed'):
                 break
-                
-            time.sleep(1) # Poll database status every second
+
+            # Stop streaming after 10 minutes to prevent worker timeout
+            idle_count += 1
+            if idle_count > 600:
+                break
+
+            time.sleep(2)  # poll every 2s instead of 1s — reduces worker load
             
     return Response(event_stream(), mimetype="text/event-stream")
 
